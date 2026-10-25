@@ -10,7 +10,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden; /* Mencegah scroll ganda */
+            overflow: hidden;
             background-color: #f8fafc;
         }
         iframe {
@@ -31,9 +31,21 @@
         // Masukkan link deployment Google Apps Script Anda di bawah ini
         const gasUrl = "https://script.google.com/macros/s/AKfycbww3zi_NOz0zBY6XVlQb4Vf3ZJxYnAC3APAv-fJiJXc_v-ft_zyzzDyzo-wbK-TeTXl3g/exec";
         
-        // Menangkap parameter dari URL GitHub (misal: ?page=login) dan meneruskannya ke iframe
+        // Meneruskan parameter (seperti ?page=login) ke iframe Apps Script
         const urlParams = window.location.search;
         document.getElementById("app-frame").src = gasUrl + urlParams;
+
+        // Listener untuk menangkap perintah pindah halaman dari Apps Script
+        window.addEventListener("message", function(event) {
+            if (event.data && event.data.type === "NAVIGATE") {
+                const baseGithubUrl = window.location.origin + window.location.pathname;
+                if (event.data.newTab) {
+                    window.open(baseGithubUrl + event.data.query, '_blank');
+                } else {
+                    window.location.href = baseGithubUrl + event.data.query;
+                }
+            }
+        });
     </script>
 
 </body>
