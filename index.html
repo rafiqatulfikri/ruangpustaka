@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <!-- Meta wajib agar bar bawah Android mengikuti warna tema -->
+    <meta id="theme-color-meta" name="theme-color" content="#0f172a">
+    <meta id="color-scheme-meta" name="color-scheme" content="dark light">
     <title>RuangPustaka UNAND</title>
     <style>
         html, body {
@@ -11,7 +14,16 @@
             width: 100%;
             height: 100%;
             overflow: hidden;
+            background-color: #0f172a; /* Default gelap agar bar bawah Android hitam */
+            transition: background-color 0.3s ease;
+        }
+        html.light-mode, html.light-mode body {
             background-color: #f8fafc;
+            color-scheme: light;
+        }
+        html.dark-mode, html.dark-mode body {
+            background-color: #0f172a;
+            color-scheme: dark;
         }
         iframe {
             position: absolute;
@@ -28,22 +40,44 @@
     <iframe id="app-frame" allowfullscreen="true"></iframe>
 
     <script>
-        // Masukkan link deployment Google Apps Script Anda di bawah ini
         const gasUrl = "https://script.google.com/macros/s/AKfycbx7NhUKt1LDisTKz0Z-z4-O0FVr7s545vzLX2Fy7TU4DVLYYD-_bagoL6tXAx4ujHbpvw/exec";
         
-        // Meneruskan parameter (seperti ?page=login) ke iframe Apps Script
         const urlParams = window.location.search;
         document.getElementById("app-frame").src = gasUrl + urlParams;
 
-        // Listener untuk menangkap perintah pindah halaman dari Apps Script
+        // Fungsi pengubah warna bar navigasi bawah HP
+        function applyParentTheme(isDark) {
+            const htmlEl = document.documentElement;
+            const themeMeta = document.getElementById('theme-color-meta');
+            const schemeMeta = document.getElementById('color-scheme-meta');
+
+            if (isDark) {
+                htmlEl.classList.add('dark-mode');
+                htmlEl.classList.remove('light-mode');
+                if (themeMeta) themeMeta.setAttribute('content', '#0f172a');
+                if (schemeMeta) schemeMeta.setAttribute('content', 'dark');
+            } else {
+                htmlEl.classList.add('light-mode');
+                htmlEl.classList.remove('dark-mode');
+                if (themeMeta) themeMeta.setAttribute('content', '#f8fafc');
+                if (schemeMeta) schemeMeta.setAttribute('content', 'light');
+            }
+        }
+
+        // Listener sinyal dari Apps Script (Navigasi & Tema Dark Mode)
         window.addEventListener("message", function(event) {
-            if (event.data && event.data.type === "NAVIGATE") {
+            if (!event.data) return;
+
+            if (event.data.type === "NAVIGATE") {
                 const baseGithubUrl = window.location.origin + window.location.pathname;
                 if (event.data.newTab) {
                     window.open(baseGithubUrl + event.data.query, '_blank');
                 } else {
                     window.location.href = baseGithubUrl + event.data.query;
                 }
+            } 
+            else if (event.data.type === "SET_THEME") {
+                applyParentTheme(event.data.isDark);
             }
         });
     </script>
