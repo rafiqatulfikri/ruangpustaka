@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <!-- Meta wajib agar bar bawah Android mengikuti warna tema -->
     <meta id="theme-color-meta" name="theme-color" content="#0f172a">
     <meta id="color-scheme-meta" name="color-scheme" content="dark light">
     <title>RuangPustaka UNAND</title>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap');
+        
         html, body {
             margin: 0;
             padding: 0;
             width: 100%;
             height: 100%;
-            overscroll-behavior-y: auto; /* Mengizinkan gestur tarik-ke-bawah (pull-to-refresh) bawaan browser */
-            background-color: #0f172a; /* Default gelap agar bar bawah Android hitam */
+            overscroll-behavior-y: auto;
+            background-color: #0f172a; 
             transition: background-color 0.3s ease;
+            font-family: 'Inter', sans-serif;
         }
         html.light-mode, html.light-mode body {
             background-color: #f8fafc;
@@ -25,6 +27,8 @@
             background-color: #0f172a;
             color-scheme: dark;
         }
+        
+        /* Iframe disembunyikan di awal (opacity 0) agar transisinya halus */
         iframe {
             display: block;
             position: absolute;
@@ -33,20 +37,87 @@
             width: 100%;
             height: 100%;
             border: none;
+            opacity: 0; 
+            transition: opacity 0.6s ease;
+        }
+
+        /* Desain Animasi Layar Memuat */
+        #splash-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid rgba(16, 185, 129, 0.15); 
+            border-top-color: #10b981;
+            border-radius: 50%;
+            animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+            margin-bottom: 16px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .loading-text {
+            font-size: 14px;
+            font-weight: 500;
+            color: #94a3b8;
+            letter-spacing: 0.5px;
+            animation: pulseText 2s infinite ease-in-out;
+        }
+        html.light-mode .loading-text {
+            color: #64748b;
+        }
+        @keyframes pulseText {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
 <body>
 
+    <!-- Animasi Loading akan tampil menutupi Iframe -->
+    <div id="splash-screen">
+        <div class="spinner"></div>
+        <div class="loading-text">Memuat RuangPustaka...</div>
+    </div>
+
     <iframe id="app-frame" allowfullscreen="true"></iframe>
 
     <script>
-        const gasUrl = "https://script.google.com/macros/s/AKfycbx7NhUKt1LDisTKz0Z-z4-O0FVr7s545vzLX2Fy7TU4DVLYYD-_bagoL6tXAx4ujHbpvw/exec";
-        
-        const urlParams = window.location.search;
-        document.getElementById("app-frame").src = gasUrl + urlParams;
+        // Cek preferensi perangkat pengguna agar warna Splash Screen tidak menyilaukan di malam hari
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+            document.documentElement.classList.add('light-mode');
+            document.getElementById('theme-color-meta').setAttribute('content', '#f8fafc');
+        }
 
-        // Fungsi pengubah warna bar navigasi bawah HP
+        const gasUrl = "https://script.google.com/macros/s/AKfycbx7NhUKt1LDisTKz0Z-z4-O0FVr7s545vzLX2Fy7TU4DVLYYD-_bagoL6tXAx4ujHbpvw/exec";
+        const urlParams = window.location.search;
+        const iframe = document.getElementById("app-frame");
+        
+        iframe.src = gasUrl + urlParams;
+
+        // Logika untuk menghilangkan animasi saat aplikasi sudah siap
+        iframe.onload = function() {
+            const splash = document.getElementById("splash-screen");
+            splash.style.opacity = '0';
+            iframe.style.opacity = '1';
+            
+            setTimeout(() => {
+                splash.style.visibility = 'hidden';
+                splash.style.display = 'none';
+            }, 500);
+        };
+
         function applyParentTheme(isDark) {
             const htmlEl = document.documentElement;
             const themeMeta = document.getElementById('theme-color-meta');
@@ -65,7 +136,6 @@
             }
         }
 
-        // Listener sinyal dari Apps Script (Navigasi, Tema Dark Mode & Pembersih URL)
         window.addEventListener("message", function(event) {
             if (!event.data) return;
 
@@ -80,7 +150,6 @@
             else if (event.data.type === "SET_THEME") {
                 applyParentTheme(event.data.isDark);
             }
-            // Membersihkan token dari address bar tanpa me-reload halaman
             else if (event.data.type === "CLEAN_URL") {
                 const baseGithubUrl = window.location.origin + window.location.pathname;
                 window.history.replaceState(null, '', baseGithubUrl + event.data.query);
