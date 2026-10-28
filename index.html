@@ -13,7 +13,7 @@
             padding: 0;
             width: 100%;
             height: 100%;
-            overflow: hidden;
+            overscroll-behavior-y: auto; /* Mengizinkan gestur tarik-ke-bawah (pull-to-refresh) bawaan browser */
             background-color: #0f172a; /* Default gelap agar bar bawah Android hitam */
             transition: background-color 0.3s ease;
         }
@@ -26,6 +26,7 @@
             color-scheme: dark;
         }
         iframe {
+            display: block;
             position: absolute;
             top: 0;
             left: 0;
@@ -64,7 +65,7 @@
             }
         }
 
-        // Listener sinyal dari Apps Script (Navigasi & Tema Dark Mode)
+        // Listener sinyal dari Apps Script (Navigasi, Tema Dark Mode & Pembersih URL)
         window.addEventListener("message", function(event) {
             if (!event.data) return;
 
@@ -78,6 +79,11 @@
             } 
             else if (event.data.type === "SET_THEME") {
                 applyParentTheme(event.data.isDark);
+            }
+            // Membersihkan token dari address bar tanpa me-reload halaman
+            else if (event.data.type === "CLEAN_URL") {
+                const baseGithubUrl = window.location.origin + window.location.pathname;
+                window.history.replaceState(null, '', baseGithubUrl + event.data.query);
             }
         });
     </script>
