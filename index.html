@@ -28,7 +28,6 @@
             color-scheme: dark;
         }
         
-        /* Iframe disembunyikan di awal (opacity 0) agar transisinya halus */
         iframe {
             display: block;
             position: absolute;
@@ -41,7 +40,6 @@
             transition: opacity 0.6s ease;
         }
 
-        /* Desain Animasi Layar Memuat */
         #splash-screen {
             position: absolute;
             top: 0;
@@ -85,7 +83,6 @@
 </head>
 <body>
 
-    <!-- Animasi Loading akan tampil menutupi Iframe -->
     <div id="splash-screen">
         <div class="spinner"></div>
         <div class="loading-text">Memuat RuangPustaka...</div>
@@ -94,7 +91,6 @@
     <iframe id="app-frame" allowfullscreen="true"></iframe>
 
     <script>
-        // Cek preferensi perangkat pengguna agar warna Splash Screen tidak menyilaukan di malam hari
         if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
             document.documentElement.classList.add('light-mode');
             document.getElementById('theme-color-meta').setAttribute('content', '#f8fafc');
@@ -103,11 +99,15 @@
         const gasUrl = "https://script.google.com/macros/s/AKfycbx7NhUKt1LDisTKz0Z-z4-O0FVr7s545vzLX2Fy7TU4DVLYYD-_bagoL6tXAx4ujHbpvw/exec";
         const urlParams = window.location.search;
         const iframe = document.getElementById("app-frame");
-        
         iframe.src = gasUrl + urlParams;
 
-        // Logika untuk menghilangkan animasi saat aplikasi sudah siap
-        iframe.onload = function() {
+        let isAppReady = false;
+
+        // Fungsi baru: Menghilangkan splash screen hanya jika dipanggil
+        function hideSplashScreen() {
+            if (isAppReady) return;
+            isAppReady = true;
+            
             const splash = document.getElementById("splash-screen");
             splash.style.opacity = '0';
             iframe.style.opacity = '1';
@@ -116,7 +116,7 @@
                 splash.style.visibility = 'hidden';
                 splash.style.display = 'none';
             }, 500);
-        };
+        }
 
         function applyParentTheme(isDark) {
             const htmlEl = document.documentElement;
@@ -137,7 +137,12 @@
         }
 
         window.addEventListener("message", function(event) {
-            if (!event.data) return;
+            if (!event.data || !event.data.type) return;
+
+            // Jika aplikasi Apps Script sudah mulai mengirim sinyal, artinya halaman aslinya sudah siap dirender
+            if (["SET_THEME", "CLEAN_URL", "NAVIGATE"].includes(event.data.type)) {
+                hideSplashScreen();
+            }
 
             if (event.data.type === "NAVIGATE") {
                 const baseGithubUrl = window.location.origin + window.location.pathname;
@@ -155,6 +160,9 @@
                 window.history.replaceState(null, '', baseGithubUrl + event.data.query);
             }
         });
+        
+        // Timer cadangan (fallback) jaga-jaga jika terjadi error koneksi lambat melebihi 8 detik
+        setTimeout(hideSplashScreen, 8000);
     </script>
 
 </body>
